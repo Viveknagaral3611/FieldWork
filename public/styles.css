@@ -15,3 +15,8 @@
 
 .web-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; }
 .web-search-row .small-copy { min-width: 0; overflow-wrap: anywhere; }
+
+#chrome-board-results { margin-top: 20px; }
+.board-results { padding: 0; list-style: none; }
+.board-results li { padding: 10px 0; border-top: 1px solid var(--line); }
+.board-results li > span { display: block; }

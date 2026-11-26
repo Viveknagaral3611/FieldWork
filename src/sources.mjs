@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { tagsFor, inferKind } from './matching.mjs';
+import { tagsFor, inferKind, matchJob } from './matching.mjs';
 import { searchSource } from './discovery.mjs';
 export function plainText(html = '') {
   let text = String(html);
@@ -9,12 +9,40 @@ export function plainText(html = '') {
 export function safeURL(value) {
   try { const u = new URL(value); return u.protocol === 'https:' ? u.toString() : ''; } catch { return ''; }
 }
+const boardHosts = {
+  greenhouse: ['boards.greenhouse.io', 'job-boards.greenhouse.io'],
+  lever: ['jobs.lever.co'],
+  ashby: ['jobs.ashbyhq.com']
+};
+export function careerBoardFromUrl(value) {
+  let url;
+  try { url = new URL(value); } catch { throw new Error('Paste the HTTPS URL of a supported career board.'); }
+  const provider = Object.keys(boardHosts).find(key => boardHosts[key].includes(url.hostname));
+  if (url.protocol !== 'https:' || !provider) {
+    throw new Error('Career board search supports public Greenhouse, Lever, and Ashby pages.');
+  }
+  const slug = boardSlug(provider, url.href);
+  return { provider, slug, company: slug, organization: 'Industry' };
+}
+
+export async function searchCareerBoard(board, profile, { kind = 'all', keyword = '' } = {}, fetcher = fetch) {
+  const all = await fetchSource(board, fetcher);
+  const matches = all
+    .filter(job => kind === 'all' || job.kind === kind)
+    .filter(job => !keyword || `${job.title} ${job.description} ${job.location}`.toLowerCase().includes(keyword.toLowerCase()))
+    .map(job => ({
+      title: job.title, kind: job.kind, location: job.location, url: job.url,
+      match: matchJob(job, profile)
+    }))
+    .sort((a, b) => b.match.score - a.match.score || a.title.localeCompare(b.title));
+  return { company: board.company, total: matches.length, jobs: matches.slice(0, 100) };
+}
+
 export function boardSlug(provider, value) {
   let slug = value.trim();
   if (/^https:\/\//.test(slug)) {
     const u = new URL(slug);
-    const hosts = { greenhouse: ['boards.greenhouse.io','job-boards.greenhouse.io'], lever: ['jobs.lever.co'], ashby: ['jobs.ashbyhq.com'] };
-    if (!hosts[provider]?.includes(u.hostname)) throw new Error('Use the public career-board URL for the selected provider.');
+    if (!boardHosts[provider]?.includes(u.hostname)) throw new Error('Use the public career-board URL for the selected provider.');
     slug = u.pathname.split('/').filter(Boolean)[0] || '';
   }
   if (!/^[a-zA-Z0-9_-]{1,100}$/.test(slug)) throw new Error('Enter a company board name, such as acme, or its public career-board URL.');

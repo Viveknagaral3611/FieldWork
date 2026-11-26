@@ -56,6 +56,16 @@ To upgrade from the first version, stop the app, extract the new ZIP, and copy y
 
 On **Internships** or **Full-time roles**, select **Search Google** to open a standard Google results page. FieldWork previews the query and uses the search box or selected research focus first, then falls back to your saved job titles, research areas, or skills. It also uses the role type and applicable date, location, and organization filters. Google receives the displayed query. The results open in a new tab and do not enter FieldWork automatically.
 
+## Connect Chrome
+
+The **Connect Chrome** button under the search box can search a public Greenhouse, Lever, or Ashby board. Paste its URL for a search without an extension, or install the Chrome companion once.
+
+1. Get the repository onto the PC that runs Chrome. Open `chrome://extensions`, enable **Developer mode**, select **Load unpacked**, and choose the `chrome-extension` folder.
+2. Run FieldWork and sign in. Open a supported employer board or job posting in Chrome. Click **FieldWork Career Board Search** from the extensions menu.
+3. Use `http://localhost:3000` for a local app or paste your HTTPS forwarded address for Codespaces. Click **Find matches**.
+
+The companion sends the board address to FieldWork. FieldWork searches the employer's public feed and ranks job titles against your saved skills and research areas. Select a title to open the original job page. You can refine the list by role type or keyword. LinkedIn and general job-search tabs are outside the supported boards.
+
 ## Eligibility screening
 
 The app extracts evidence from each job's description. It uses three labels:

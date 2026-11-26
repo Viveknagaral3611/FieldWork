@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { eligibilityFor, matchJob, inferKind, suggestProfile } from '../src/matching.mjs';
 import { openStore, DEFAULT_PROFILE } from '../src/store.mjs';
-import { fetchSource, refreshAll, validateSource, normalizeJob, plainText } from '../src/sources.mjs';
+import { fetchSource, refreshAll, validateSource, normalizeJob, plainText, careerBoardFromUrl, searchCareerBoard } from '../src/sources.mjs';
 import { extractDocument } from '../src/documents.mjs';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import path from 'node:path';
@@ -162,4 +162,25 @@ test('source upgrade adds keyless boards once and preserves existing source choi
   } finally {
     s.close();
   }
+});
+
+
+test('Chrome board search returns original posting links ordered by CV fit', async () => {
+  const board = careerBoardFromUrl('https://job-boards.greenhouse.io/example/jobs/100?source=test');
+  const profile = { skills: ['CFD', 'MATLAB'], areas: ['Simulation & modeling'] };
+  const fetcher = async url => {
+    assert.match(url, /^https:\/\/boards-api\.greenhouse\.io\/v1\/boards\/example\/jobs/);
+    return response({ jobs: [
+      { id: 1, title: 'Accounting Intern', content: 'Accounting internship', absolute_url: 'https://job-boards.greenhouse.io/example/jobs/1' },
+      { id: 2, title: 'Aerodynamics Intern', content: 'CFD and MATLAB simulation', absolute_url: 'https://job-boards.greenhouse.io/example/jobs/2' }
+    ] });
+  };
+  const result = await searchCareerBoard(board, profile, { kind: 'internship' }, fetcher);
+  assert.equal(result.total, 2);
+  assert.equal(result.jobs[0].title, 'Aerodynamics Intern');
+  assert.equal(result.jobs[0].url, 'https://job-boards.greenhouse.io/example/jobs/2');
+  assert.ok(result.jobs[0].match.explanation.some(reason => reason.includes('CFD')));
+  const filtered = await searchCareerBoard(board, profile, { keyword: 'Accounting' }, fetcher);
+  assert.deepEqual(filtered.jobs.map(job => job.title), ['Accounting Intern']);
+  assert.throws(() => careerBoardFromUrl('https://www.linkedin.com/jobs/search/'), /supports public/);
 });

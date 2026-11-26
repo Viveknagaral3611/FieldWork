@@ -19,8 +19,10 @@ test('local API persists profile, notes, manual jobs, source controls and protec
       return {status:res.status,data:await res.json()};
     };
     assert.equal((await request('/api/state')).status,401);
+    assert.equal((await request('/api/board-search','POST',{boardUrl:'https://jobs.lever.co/example'})).status,401);
     const first={email:'first@example.com',password:'First-Password-123'};
     assert.equal((await request('/api/register','POST',first)).status,200);
+    assert.equal((await request('/api/board-search','POST',{boardUrl:'https://www.linkedin.com/jobs/search/'})).status,400);
     let result=await request('/api/state?mode=demo');assert.equal(result.data.jobs.length,12);
     const p={...result.data.profile,name:'Test Researcher',visa:'F-1',skills:['Python','PIV'],projects:'PIV research'};
     assert.equal((await request('/api/profile','PUT',p)).status,200);

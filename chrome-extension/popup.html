@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FieldWork career board search</title>
+  <style>
+    body { width: 300px; margin: 16px; font: 14px system-ui; color: #263c32; background: #f7f8f4; }
+    h1 { margin: 0 0 10px; font-size: 18px; }
+    p { line-height: 1.4; }
+    label, input { display: block; }
+    input { box-sizing: border-box; width: 100%; margin: 5px 0 12px; padding: 8px; }
+    button { font: inherit; padding: 8px 14px; }
+  </style>
+</head>
+<body>
+  <h1>Search in FieldWork</h1>
+  <p id="status" role="status">Checking this tab…</p>
+  <form id="open">
+    <label>FieldWork address
+      <input id="workspace" type="url" required value="http://localhost:3000">
+    </label>
+    <button type="submit" disabled>Find matches</button>
+  </form>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

@@ -90,6 +90,37 @@ function renderGoogleSearch() {
   $('#google-query').textContent = query;
 }
 
+function chromeBoardModal(boardUrl = '', autoSearch = false) {
+  openModal(`${modalHead('CAREER BOARD SEARCH','Connect Chrome')}
+    <p class="small-copy">Install the FieldWork companion in Chrome, or paste a public Greenhouse, Lever, or Ashby board here. FieldWork ranks its openings using the skills and research areas saved in your profile.</p>
+    <p class="small-copy"><a class="inline-link" href="https://github.com/Viveknagaral3611/FieldWork/tree/main/chrome-extension" target="_blank" rel="noopener noreferrer">Get the Chrome companion ${icon('external')}</a></p>
+    <form id="chrome-board-form">
+      <label>Career board URL<input type="url" name="boardUrl" maxlength="2048" placeholder="https://jobs.lever.co/employer" value="${esc(boardUrl)}" required></label>
+      <div class="form-grid">
+        <label>Role type<select name="kind"><option value="all">All roles</option><option value="internship">Internships</option><option value="fulltime">Full-time roles</option></select></label>
+        <label>Keyword (optional)<input name="keyword" maxlength="150" placeholder="e.g. wind tunnel"></label>
+      </div>
+      <button type="submit" class="button primary">Find matches</button>
+    </form>
+    <div id="chrome-board-results" aria-live="polite"></div>`, true);
+  if (autoSearch) $('#chrome-board-form').requestSubmit();
+}
+
+function openChromeBoardFromLink() {
+  const fragment = location.hash.slice(1);
+  if (!fragment.startsWith('chrome?')) return;
+  const url = new URLSearchParams(fragment.slice(7)).get('board');
+  history.replaceState(null, '', location.pathname + location.search + '#internship');
+  if (url) chromeBoardModal(url, true);
+}
+
+function showCareerBoardResults(el, result) {
+  const personalized = state.profile.skills?.length || state.profile.areas?.length;
+  el.innerHTML = `<h3>${esc(result.company)} · ${result.total} openings</h3>
+    <p class="small-copy">${personalized?'Ranked by your saved profile.':'Save skills in Your profile to get personalized ranks.'}${result.total > result.jobs.length?' Showing the first 100.':''}</p>
+    ${result.jobs.length ? `<ul class="board-results">${result.jobs.map(job=>`<li><a class="inline-link" href="${esc(job.url)}" target="_blank" rel="noopener noreferrer">${esc(job.title)} ${icon('external')}</a><span class="small-copy">${esc(job.location)}${personalized&&job.match.explanation.length?' · '+esc(job.match.explanation.join(' · ')):''}</span></li>`).join('')}</ul>` : '<p>No roles matched these filters.</p>'}`;
+}
+
 function discovery(){
   const isIntern=page==='internship',isFull=page==='fulltime',isOther=page==='other',isSaved=page==='saved',isApps=page==='applications';
   const heading=isIntern?'Good research starts<br>with the right opportunity.':isFull?'Your research.<br>A bigger impact.':isOther?'A few possibilities<br>to take a closer look at.':isSaved?'Keep the possibilities<br>worth coming back to.':'A little momentum,<br>one application at a time.';
@@ -102,7 +133,7 @@ function discovery(){
   ${!state.profile.confirmed?`<div class="profile-nudge"><span class="nudge-icon">${icon('user')}</span><div><strong>A starting point, ready to become yours.</strong><span>Review your starter research profile or import a CV to improve your matches.</span></div><button class="text-button" data-page="profile">Complete profile ${icon('arrow')}</button></div>`:''}
   <section class="opportunities"><div class="section-top"><div><h2>${isIntern?'Explore internships':isFull?'Explore full-time roles':isOther?'Roles to classify':isSaved?'Your shortlist':'Application tracker'}</h2><p>${mode==='demo'?'Illustrative opportunities, ranked using your editable profile.':'Listings from your connected sources and manually added roles.'}</p></div>${mode==='live'?'<button class="button small primary" data-action="refresh">'+icon('search')+'Search now</button>':''}<button class="button small" data-action="add-job">${icon('plus')}Add a role</button></div>
   <div class="search-row"><label class="search-input">${icon('search')}<input id="search" placeholder="Search roles, organizations, or research areas…" aria-label="Search opportunities" value="${esc(search)}"><kbd>⌘ K</kbd></label><button class="button filter-button" data-action="filter-modal">${icon('sliders')}Filters<span class="filter-count">${filterCount()}</span></button></div>
-  ${isIntern||isFull?`<div class="web-search-row"><a id="google-job-search" class="button small" target="_blank" rel="noopener noreferrer">Search Google ${icon('external')}</a><span class="small-copy">Opens Google in a new tab · <span id="google-query"></span></span></div>`:''}
+  ${isIntern||isFull?`<div class="web-search-row"><a id="google-job-search" class="button small" target="_blank" rel="noopener noreferrer">Search Google ${icon('external')}</a>${globalThis.FIELDWORK_PREVIEW?'':'<button class="button small" data-action="chrome-board">Connect Chrome</button>'}<span class="small-copy">Opens Google in a new tab · <span id="google-query"></span></span></div>`:''}
   <div class="filter-bar"><div class="organization-tabs" role="group" aria-label="Organization type">${['All','Industry','Academia','National laboratory'].map(t=>`<button class="org-tab ${organization===t?'selected':''}" data-org="${t}">${t==='All'?'All opportunities':t==='National laboratory'?'National labs':t}</button>`).join('')}</div><div class="sort-control"><label for="sort">Sort by</label><select id="sort"><option value="match" ${sort==='match'?'selected':''}>Best match</option><option value="newest" ${sort==='newest'?'selected':''}>Recently discovered</option><option value="company" ${sort==='company'?'selected':''}>Organization</option><option value="deadline" ${sort==='deadline'?'selected':''}>Deadline</option></select></div></div>
   <div class="active-filters" id="active-filters"></div><div class="results-header"><span id="result-count"></span><div class="view-switch"><button aria-label="Grid view" data-layout="grid" class="${layout==='grid'?'selected':''}">${icon('grid')}</button><button aria-label="List view" data-layout="list" class="${layout==='list'?'selected':''}">${icon('list')}</button></div></div><div id="results" class="job-grid"></div></section>
   <div class="bottom-note">${icon('shield')}A match is a starting point. Review employer requirements and confirm work authorization with your school when applicable.</div>`;
@@ -213,6 +244,7 @@ document.addEventListener('click',async event=>{
     if(action==='filter-modal')filterModal();
     if(action==='add-source')sourceModal();
     if(action==='add-job')addJobModal();
+    if(action==='chrome-board')chromeBoardModal();
     if(action==='toggle-mode'){mode=mode==='demo'?'live':'demo';storage.set('fieldwork-mode',mode);await reload();render();}
     if(action==='upload'){$('#document-input').value='';$('#document-input').click();}
     if(action==='reset-filters'){filters={area:'All',eligibility:'open',season:'All',year:'',location:'',degree:'All',workplace:'All',includeUnknown:true,includeClosed:false};organization='All';search='';if(modal.open)closeModal();render();}
@@ -230,6 +262,17 @@ document.addEventListener('submit',async e=>{
     if(form.id==='auth-form'){
       await api(form.dataset.register==='true'?'/api/register':'/api/login',{method:'POST',body:JSON.stringify(values)});
       await openWorkspace();
+      return;
+    }
+    if(form.id==='chrome-board-form'){
+      const results = $('#chrome-board-results');
+      results.textContent = 'Checking this board…';
+      try {
+        const result = await api('/api/board-search',{method:'POST',body:JSON.stringify(values)});
+        showCareerBoardResults(results, result);
+      } catch (error) {
+        results.textContent = error.message;
+      }
       return;
     }
     if(form.id==='profile-form'){const p=captureProfile();if(!p.keepResumeText)p.resumeText='';await mutate('/api/profile','PUT',p);profileDraft=null;filters.year=String(state.profile.targetYear);render();toast('Profile saved. Match rankings and discovery keywords updated.');}
@@ -252,6 +295,7 @@ async function openWorkspace(){
   await reload();
   filters.year=String(state.profile.targetYear);
   render();
+  if(!globalThis.FIELDWORK_PREVIEW)openChromeBoardFromLink();
 }
 function renderSignIn(register=false){
   $('#app').innerHTML=`<main class="auth-screen"><section class="panel">

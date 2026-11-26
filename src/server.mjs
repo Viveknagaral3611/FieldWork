@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { openStore } from './store.mjs';
 import { AREAS, SKILLS, matchJob, eligibilityFor, suggestProfile, tagsFor } from './matching.mjs';
 import { ORGANIZATIONS } from './demo.mjs';
-import { refreshAll, validateSource, safeURL } from './sources.mjs';
+import { refreshAll, validateSource, safeURL, careerBoardFromUrl, searchCareerBoard } from './sources.mjs';
 import { ADZUNA_ID, installStarterBoards, publicDiscovery, searchSource } from './discovery.mjs';
 import { extractDocument } from './documents.mjs';
 import { accountsFor } from './accounts.mjs';
@@ -108,6 +108,19 @@ const server=http.createServer(async(req,res)=>{
     }
     if(req.method==='POST'&&url.pathname==='/api/suggest'){
       const input=await body(req);return send(res,200,suggestProfile(String(input.text||'').slice(0,400000)));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/board-search') {
+      const input = await body(req);
+      const { boardUrl, kind = 'all', keyword = '' } = input;
+      if (typeof boardUrl !== 'string' || boardUrl.length > 2048 ||
+          typeof keyword !== 'string' || keyword.length > 150 ||
+          !['all', 'internship', 'fulltime'].includes(kind)) {
+        throw new Error('Enter a valid career board URL and search filters.');
+      }
+      const board = careerBoardFromUrl(boardUrl);
+      const existing = store.sources().find(source => source.provider === board.provider && source.slug.toLowerCase() === board.slug.toLowerCase());
+      const result = await searchCareerBoard(existing || board, store.setting('profile', {}), { kind, keyword: keyword.trim() });
+      return send(res, 200, result);
     }
     if(req.method==='POST'&&url.pathname==='/api/sources'){
       if(store.sources().length>=50)throw new Error('This local edition supports up to 50 connected boards.');
