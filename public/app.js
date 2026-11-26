@@ -272,6 +272,15 @@ document.addEventListener('submit',async e=>{
         showCareerBoardResults(results, result);
       } catch (error) {
         results.textContent = error.message;
+        const addRole = document.createElement('button');
+        addRole.type = 'button';
+        addRole.className = 'button small';
+        addRole.textContent = 'Add one role manually';
+        addRole.addEventListener('click', () => {
+          closeModal();
+          addJobModal();
+        });
+        results.append(document.createElement('br'), addRole);
       }
       return;
     }

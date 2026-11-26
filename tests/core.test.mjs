@@ -183,4 +183,6 @@ test('Chrome board search returns original posting links ordered by CV fit', asy
   const filtered = await searchCareerBoard(board, profile, { keyword: 'Accounting' }, fetcher);
   assert.deepEqual(filtered.jobs.map(job => job.title), ['Accounting Intern']);
   assert.throws(() => careerBoardFromUrl('https://www.linkedin.com/jobs/search/'), /supports public/);
+  assert.throws(() => careerBoardFromUrl('https://jobright.ai/jobs'), /copy the employer’s application URL/);
+  assert.throws(() => careerBoardFromUrl('https://www.jobright.ai/jobs'), /copy the employer’s application URL/);
 });

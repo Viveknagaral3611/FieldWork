@@ -9,6 +9,10 @@ async function setup() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab?.url) {
     const url = new URL(tab.url);
+    if (url.hostname === 'jobright.ai' || url.hostname.endsWith('.jobright.ai')) {
+      statusLine.textContent = 'Open a job on Jobright, then open the employer’s application page. Run FieldWork from that tab if it is on Greenhouse, Lever, or Ashby.';
+      return;
+    }
     const slug = url.pathname.split('/').filter(Boolean)[0];
     if (url.protocol === 'https:' && supported.has(url.hostname) && /^[a-z0-9_-]{1,100}$/i.test(slug || '')) {
       board = new URL('/' + slug, url.origin).href;

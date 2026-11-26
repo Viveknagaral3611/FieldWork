@@ -64,7 +64,7 @@ The **Connect Chrome** button under the search box can search a public Greenhous
 2. Run FieldWork and sign in. Open a supported employer board or job posting in Chrome. Click **FieldWork Career Board Search** from the extensions menu.
 3. Use `http://localhost:3000` for a local app or paste your HTTPS forwarded address for Codespaces. Click **Find matches**.
 
-The companion sends the board address to FieldWork. FieldWork searches the employer's public feed and ranks job titles against your saved skills and research areas. Select a title to open the original job page. You can refine the list by role type or keyword. LinkedIn and general job-search tabs are outside the supported boards.
+The companion sends the board address to FieldWork. FieldWork searches the employer's public feed and ranks job titles against your saved skills and research areas. Select a title to open the original job page. You can refine the list by role type or keyword. For an opening you discover on Jobright, open the employer’s application page. If it’s on Greenhouse, Lever, or Ashby, use that page’s URL in **Connect Chrome**. For other sites, use **Add a role** and enter the individual job’s details and URL. Connect Chrome does not search Jobright or LinkedIn results pages.
 
 ## Eligibility screening
 

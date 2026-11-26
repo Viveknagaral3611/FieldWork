@@ -17,6 +17,9 @@ const boardHosts = {
 export function careerBoardFromUrl(value) {
   let url;
   try { url = new URL(value); } catch { throw new Error('Paste the HTTPS URL of a supported career board.'); }
+  if (url.hostname === 'jobright.ai' || url.hostname.endsWith('.jobright.ai')) {
+    throw new Error('This URL opens Jobright. Open a job there and copy the employer’s application URL. If it is on Greenhouse, Lever, or Ashby, paste it here to search that employer’s board.');
+  }
   const provider = Object.keys(boardHosts).find(key => boardHosts[key].includes(url.hostname));
   if (url.protocol !== 'https:' || !provider) {
     throw new Error('Career board search supports public Greenhouse, Lever, and Ashby pages.');

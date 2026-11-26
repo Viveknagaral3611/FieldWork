@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FieldWork Career Board Search",
   "description": "Search the active Greenhouse, Lever, or Ashby board in your FieldWork workspace.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "permissions": ["activeTab", "storage"],
   "action": {
     "default_title": "Search this career board in FieldWork",
