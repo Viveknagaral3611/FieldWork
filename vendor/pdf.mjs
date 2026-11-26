@@ -17024,7 +17024,9 @@ const MAX_FONT_SIZE = 100;
 const EXECUTION_TIME = 15;
 const EXECUTION_STEPS = 10;
 const FULL_CHUNK_HEIGHT = 16;
-const SCALE_MATRIX = new DOMMatrix();
+// FieldWork extracts text in Node without a canvas dependency.
+// Allocate the matrix only when a page is actually drawn.
+let scaleMatrix;
 const XY = new Float32Array(2);
 const MIN_MAX_INIT = new Float32Array([Infinity, Infinity, -Infinity, -Infinity]);
 function mirrorContextOperations(ctx, destCtx) {
@@ -19186,10 +19188,11 @@ class CanvasGraphics {
       ctx.save();
     }
     ctx.scale(scaleX, scaleY);
-    SCALE_MATRIX.a = 1 / scaleX;
-    SCALE_MATRIX.d = 1 / scaleY;
+    scaleMatrix ??= new DOMMatrix();
+    scaleMatrix.a = 1 / scaleX;
+    scaleMatrix.d = 1 / scaleY;
     const newPath = new Path2D();
-    newPath.addPath(path, SCALE_MATRIX);
+    newPath.addPath(path, scaleMatrix);
     if (dashes.length > 0) {
       const scale = Math.max(scaleX, scaleY);
       ctx.setLineDash(dashes.map(x => x / scale));
