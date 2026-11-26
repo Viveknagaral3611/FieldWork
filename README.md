@@ -52,6 +52,10 @@ Optional employer boards can still be added under **Sources & updates**. You can
 
 To upgrade from the first version, stop the app, extract the new ZIP, and copy your existing `data` folder into the newly extracted `fieldwork` folder before starting it. Your profile, application notes, and any connected boards carry over.
 
+## Search the public web
+
+On **Internships** or **Full-time roles**, select **Search Google** to open a standard Google results page. FieldWork previews the query and uses the search box or selected research focus first, then falls back to your saved job titles, research areas, or skills. It also uses the role type and applicable date, location, and organization filters. Google receives the displayed query. The results open in a new tab and do not enter FieldWork automatically.
+
 ## Eligibility screening
 
 The app extracts evidence from each job's description. It uses three labels:

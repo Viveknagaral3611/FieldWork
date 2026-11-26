@@ -57,6 +57,39 @@ function render(){
 }
 function nav(key,i,label,count=''){return `<button class="nav-item ${page===key?'active':''}" data-page="${key}" aria-label="${label}" title="${label}" ${page===key?'aria-current="page"':''}>${icon(i)}<span>${label}</span>${count!==''?`<small>${count}</small>`:''}</button>`;}
 function dataNotice(){return mode==='demo'?`<div class="data-notice">${icon('file')}<span><strong>You’re exploring sample data.</strong> These fictional roles show how your workspace works.</span><button class="text-button" data-action="toggle-mode">Use live workspace ${icon('arrow')}</button></div>`:'';}
+function googleJobQuery() {
+  const profile = state.profile;
+  const focus = search.trim()
+    || (filters.area !== 'All' ? filters.area : '')
+    || profile.searchTerms?.find(term => term.trim())?.trim()
+    || profile.areas?.[0]
+    || profile.skills?.[0]
+    || '';
+  const date = page === 'internship'
+    ? [filters.season === 'Summer' ? 'summer' : '', filters.year].filter(Boolean).join(' ')
+    : '';
+  const role = page === 'internship'
+    ? (/\b(?:intern(?:ship)?s?|co[ -]?op)\b/i.test(focus) ? '' : 'internship')
+    : (/\bfull[ -]time\b/i.test(focus) ? '' : 'full-time jobs');
+  const sector = {
+    Academia: 'university',
+    'National laboratory': 'national laboratory',
+    Industry: 'industry',
+  }[organization];
+  const workplace = ['Remote', 'Hybrid', 'On-site'].includes(filters.workplace) ? filters.workplace : '';
+  return [date, focus, role, sector, filters.location.trim(), workplace].filter(Boolean).join(' ');
+}
+
+function renderGoogleSearch() {
+  const link = $('#google-job-search');
+  if (!link) return;
+  const query = googleJobQuery();
+  const url = new URL('https://www.google.com/search');
+  url.searchParams.set('q', query);
+  link.href = url.href;
+  $('#google-query').textContent = query;
+}
+
 function discovery(){
   const isIntern=page==='internship',isFull=page==='fulltime',isOther=page==='other',isSaved=page==='saved',isApps=page==='applications';
   const heading=isIntern?'Good research starts<br>with the right opportunity.':isFull?'Your research.<br>A bigger impact.':isOther?'A few possibilities<br>to take a closer look at.':isSaved?'Keep the possibilities<br>worth coming back to.':'A little momentum,<br>one application at a time.';
@@ -69,6 +102,7 @@ function discovery(){
   ${!state.profile.confirmed?`<div class="profile-nudge"><span class="nudge-icon">${icon('user')}</span><div><strong>A starting point, ready to become yours.</strong><span>Review your starter research profile or import a CV to improve your matches.</span></div><button class="text-button" data-page="profile">Complete profile ${icon('arrow')}</button></div>`:''}
   <section class="opportunities"><div class="section-top"><div><h2>${isIntern?'Explore internships':isFull?'Explore full-time roles':isOther?'Roles to classify':isSaved?'Your shortlist':'Application tracker'}</h2><p>${mode==='demo'?'Illustrative opportunities, ranked using your editable profile.':'Listings from your connected sources and manually added roles.'}</p></div>${mode==='live'?'<button class="button small primary" data-action="refresh">'+icon('search')+'Search now</button>':''}<button class="button small" data-action="add-job">${icon('plus')}Add a role</button></div>
   <div class="search-row"><label class="search-input">${icon('search')}<input id="search" placeholder="Search roles, organizations, or research areas…" aria-label="Search opportunities" value="${esc(search)}"><kbd>⌘ K</kbd></label><button class="button filter-button" data-action="filter-modal">${icon('sliders')}Filters<span class="filter-count">${filterCount()}</span></button></div>
+  ${isIntern||isFull?`<div class="web-search-row"><a id="google-job-search" class="button small" target="_blank" rel="noopener noreferrer">Search Google ${icon('external')}</a><span class="small-copy">Opens Google in a new tab · <span id="google-query"></span></span></div>`:''}
   <div class="filter-bar"><div class="organization-tabs" role="group" aria-label="Organization type">${['All','Industry','Academia','National laboratory'].map(t=>`<button class="org-tab ${organization===t?'selected':''}" data-org="${t}">${t==='All'?'All opportunities':t==='National laboratory'?'National labs':t}</button>`).join('')}</div><div class="sort-control"><label for="sort">Sort by</label><select id="sort"><option value="match" ${sort==='match'?'selected':''}>Best match</option><option value="newest" ${sort==='newest'?'selected':''}>Recently discovered</option><option value="company" ${sort==='company'?'selected':''}>Organization</option><option value="deadline" ${sort==='deadline'?'selected':''}>Deadline</option></select></div></div>
   <div class="active-filters" id="active-filters"></div><div class="results-header"><span id="result-count"></span><div class="view-switch"><button aria-label="Grid view" data-layout="grid" class="${layout==='grid'?'selected':''}">${icon('grid')}</button><button aria-label="List view" data-layout="list" class="${layout==='list'?'selected':''}">${icon('list')}</button></div></div><div id="results" class="job-grid"></div></section>
   <div class="bottom-note">${icon('shield')}A match is a starting point. Review employer requirements and confirm work authorization with your school when applicable.</div>`;
@@ -96,6 +130,7 @@ function visibleJobs(){
   }).sort((a,b)=>sort==='match'?b.match.score-a.match.score:sort==='company'?a.company.localeCompare(b.company):sort==='deadline'?(Date.parse(a.deadline)||Infinity)-(Date.parse(b.deadline)||Infinity):(Date.parse(b.firstSeen)||0)-(Date.parse(a.firstSeen)||0));
 }
 function renderResults(){
+  renderGoogleSearch();
   const jobs=visibleJobs();$('#result-count').innerHTML=`<strong>${jobs.length}</strong> ${mode==='demo'?'sample ':''}${jobs.length===1?'opportunity':'opportunities'} <span>· ${sort==='match'?'Ranked by research fit':'Your selected order'}</span>`;
   $('#active-filters').innerHTML=`${page==='internship'&&filters.season!=='All'?`<button data-remove-filter="season">${esc(filters.season)} ${esc(filters.year)} ${icon('x')}</button>`:''}${filters.eligibility==='open'?'<span class="quiet-chip">Explicit eligibility conflicts hidden</span>':`<button data-remove-filter="eligibility">${esc(eligibilityLabels[filters.eligibility]||'All eligibility statuses')} ${icon('x')}</button>`}${filters.area!=='All'?`<button data-remove-filter="area">${esc(filters.area)} ${icon('x')}</button>`:''}${page==='internship'&&filters.includeUnknown?'<span class="quiet-chip">Includes dates to verify</span>':''}`;
   $('#results').className=`job-grid ${layout==='list'?'list-view':''}`;

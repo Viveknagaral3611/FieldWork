@@ -12,3 +12,6 @@
 .auth-screen .brand { margin-bottom: 24px; }
 .auth-screen h1 { margin-bottom: 8px; }
 .auth-screen form { display: grid; gap: 12px; margin-top: 20px; }
+
+.web-search-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; }
+.web-search-row .small-copy { min-width: 0; overflow-wrap: anywhere; }
