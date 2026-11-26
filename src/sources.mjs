@@ -47,6 +47,15 @@ export function normalizeJob(raw, source) {
     description = [raw.descriptionPlain || plainText(raw.description), ...(raw.lists || []).map(l => `${l.text}\n${plainText(l.content)}`), raw.additionalPlain || plainText(raw.additional)].filter(Boolean).join('\n\n');
     url = raw.hostedUrl || raw.applyUrl; applyUrl = raw.applyUrl; postedAt = raw.createdAt ? new Date(raw.createdAt).toISOString() : null;
     compensation = raw.salaryDescriptionPlain || plainText(raw.salaryDescription);
+  } else if (source.provider === 'jobicy') {
+    title = raw.jobTitle;
+    externalId = raw.id;
+    description = plainText(raw.jobDescription || raw.jobExcerpt);
+    location = raw.jobGeo;
+    url = raw.url;
+    employment = Array.isArray(raw.jobType) ? raw.jobType.join(' ') : raw.jobType;
+    employment = (employment || '').replace(/[-_]/g, ' ');
+    postedAt = raw.pubDate || null;
   } else if (source.provider === 'adzuna') {
     title = raw.title;
     externalId = raw.id;
@@ -62,7 +71,7 @@ export function normalizeJob(raw, source) {
   if (!title || !externalId || !safeURL(url)) throw new Error('Source returned an incomplete job record; previous listings were preserved.');
   const text = `${title} ${description}`;
   const year = /\b(20\d{2})\b/.exec(title)?.[1] || (/summer.{0,25}\b(20\d{2})\b/i.exec(description)?.[1]);
-  return { externalId: String(externalId), company: raw.company?.display_name || source.company, organization: source.provider === 'adzuna' ? classifyEmployer(raw.company?.display_name || '') : source.organization, provider: source.provider, title, description: description || 'Description not supplied by the source. Check the original posting.', location: location || 'Not specified', url: safeURL(url), applyUrl: safeURL(applyUrl) || safeURL(url), kind: inferKind(title, employment || '', description), season: /summer/i.test(text) ? 'Summer' : 'Not specified', year: year ? Number(year) : null, tags: tagsFor(text), degree: /(?:undergraduate|bachelor'?s?).{0,30}only/i.test(text) ? 'Undergraduate only' : /ph\.?d|doctoral|graduate|master'?s?/i.test(text) ? 'Graduate' : 'Not specified', workplace: /hybrid/i.test(location || '') ? 'Hybrid' : raw.isRemote || /remote/i.test(location || '') ? 'Remote' : 'Not specified', compensation: compensation || 'Not specified', postedAt, deadline: null };
+  return { externalId: String(externalId), company: raw.companyName || raw.company?.display_name || source.company, organization: ['adzuna','jobicy'].includes(source.provider) ? classifyEmployer(raw.companyName || raw.company?.display_name || '') : source.organization, provider: source.provider, title, description: description || 'Description not supplied by the source. Check the original posting.', location: location || 'Not specified', url: safeURL(url), applyUrl: safeURL(applyUrl) || safeURL(url), kind: inferKind(title, employment || '', description), season: /summer/i.test(text) ? 'Summer' : 'Not specified', year: year ? Number(year) : null, tags: tagsFor(text), degree: /(?:undergraduate|bachelor'?s?).{0,30}only/i.test(text) ? 'Undergraduate only' : /ph\.?d|doctoral|graduate|master'?s?/i.test(text) ? 'Graduate' : 'Not specified', workplace: /hybrid/i.test(location || '') ? 'Hybrid' : source.provider === 'jobicy' || raw.isRemote || /remote/i.test(location || '') ? 'Remote' : 'Not specified', compensation: compensation || 'Not specified', postedAt, deadline: null };
 }
 function classifyEmployer(company) {
   if (/national (?:lab|laborator)|\b(?:argonne|nrel|sandia|ornl|pnnl|brookhaven|netl|fermilab)\b/i.test(company)) return 'National laboratory';
@@ -98,7 +107,27 @@ async function fetchAdzuna(source, fetcher) {
   return [...jobs.values()];
 }
 
+const jobicyCache = new WeakMap();
+const jobicyInterval = 60 * 60_000;
+async function fetchJobicy(source, fetcher) {
+  // Workspaces share one refresh per hour for this public feed.
+  const cached = jobicyCache.get(fetcher);
+  if (cached && cached.until > Date.now()) return cached.jobs;
+  const jobs = (async () => {
+    const data = await fetchJSON('https://jobicy.com/api/jobs?count=100&geo=usa', fetcher, 12000);
+    if (!Array.isArray(data.jobs)) throw new Error('Unexpected Jobicy response.');
+    return data.jobs.map(raw => {
+      const job = normalizeJob(raw, source);
+      if (new URL(job.url).hostname !== 'jobicy.com') throw new Error('Jobicy did not return a canonical listing link.');
+      return job;
+    });
+  })();
+  jobicyCache.set(fetcher, { jobs, until: Date.now() + jobicyInterval });
+  return jobs;
+}
+
 export async function fetchSource(source, fetcher = fetch) {
+  if (source.provider === 'jobicy') return fetchJobicy(source, fetcher);
   if (source.provider === 'adzuna') return fetchAdzuna(source, fetcher);
   const token = encodeURIComponent(source.slug);
   if (source.provider === 'greenhouse') {

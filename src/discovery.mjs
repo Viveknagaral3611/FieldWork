@@ -7,12 +7,18 @@ const starterBoards = [
   ['greenhouse', 'sharkninjaoperatingllc', 'SharkNinja'],
   ['greenhouse', 'lotusworks', 'LotusWorks'],
   ['greenhouse', 'pacificfusion', 'Pacific Fusion'],
-  ['lever', 'xcimer', 'Xcimer Energy']
+  ['lever', 'xcimer', 'Xcimer Energy'],
+  ['greenhouse', 'metoxinternationalinc', 'MetOx International'],
+  ['greenhouse', 'kairospower', 'Kairos Power'],
+  ['greenhouse', 'redwoodmaterials', 'Redwood Materials'],
+  ['greenhouse', 'figureai', 'Figure'],
+  ['lever', 'loftorbital', 'Loft Orbital']
 ];
 
 export function installStarterBoards(store) {
-  if (store.setting('starterBoardsV2', false)) return;
-  for (const [provider, slug, company] of starterBoards) {
+  if (store.setting('starterBoardsV3', false)) return;
+  const previousStarterBoards = store.setting('starterBoardsV2', false);
+  for (const [provider, slug, company] of (previousStarterBoards ? starterBoards.slice(5) : starterBoards)) {
     if (store.sources().some(source => source.provider === provider && source.slug.toLowerCase() === slug)) continue;
     store.saveSource({
       id: `starter-${provider}-${slug}`,
@@ -20,7 +26,13 @@ export function installStarterBoards(store) {
       enabled: true, starter: true, lastSuccess: null, error: null
     });
   }
+  store.saveSource({
+    id: 'starter-jobicy-us', provider: 'jobicy', slug: 'us-remote',
+    company: 'Jobicy · US remote', organization: 'Not specified',
+    enabled: true, starter: true, lastSuccess: null, error: null
+  });
   store.set('starterBoardsV2', true);
+  store.set('starterBoardsV3', true);
 }
 
 const researchTerms = {

@@ -25,7 +25,7 @@ test('local API persists profile, notes, manual jobs, source controls and protec
     const p={...result.data.profile,name:'Test Researcher',visa:'F-1',skills:['Python','PIV'],projects:'PIV research'};
     assert.equal((await request('/api/profile','PUT',p)).status,200);
     result=await request('/api/state');assert.equal(result.data.profile.name,'Test Researcher');assert.equal(result.data.jobs.length,0);
-    assert.equal(result.data.sources.filter(source=>source.starter).length,5);
+    assert.equal(result.data.sources.filter(source=>source.starter).length,11);
     const configured=await request('/api/discovery','PUT',{appId:'id-123',appKey:'test-secret'});
     assert.equal(configured.data.configured,true);
     assert.ok(!JSON.stringify((await request('/api/state')).data).includes('test-secret'));

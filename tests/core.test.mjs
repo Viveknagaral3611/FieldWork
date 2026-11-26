@@ -125,3 +125,41 @@ test('Adzuna returns distinct employers and deduplicates across queries',async()
   assert.equal(jobs[1].kind,'fulltime');
   assert.equal(requests[1].searchParams.get('full_time'),'1');
 });
+
+test('Jobicy imports US remote roles from multiple employers and shares the feed request', async () => {
+  const source = { provider: 'jobicy', company: 'Jobicy' };
+  let requests = 0;
+  const fetcher = async url => {
+    requests++;
+    assert.equal(new URL(url).searchParams.get('geo'), 'usa');
+    return response({ jobs: [
+      { id: 41, jobTitle: 'Data Analyst', companyName: 'Example Data', jobType: ['full-time'], jobGeo: 'USA', url: 'https://jobicy.com/jobs/41-data-analyst' },
+      { id: 42, jobTitle: 'Modeling Intern', companyName: 'Example Labs', jobType: ['internship'], jobDescription: '<p>Python and CFD</p>', url: 'https://jobicy.com/jobs/42-modeling-intern' }
+    ] });
+  };
+  const [jobs, second] = await Promise.all([fetchSource(source, fetcher), fetchSource(source, fetcher)]);
+  assert.equal(requests, 1);
+  assert.deepEqual(jobs, second);
+  assert.deepEqual(jobs.map(job => job.company), ['Example Data', 'Example Labs']);
+  assert.deepEqual(jobs.map(job => job.kind), ['fulltime', 'internship']);
+  assert.equal(jobs[1].workplace, 'Remote');
+  assert.equal(jobs[1].applyUrl, 'https://jobicy.com/jobs/42-modeling-intern');
+});
+
+test('source upgrade adds keyless boards once and preserves existing source choices', async () => {
+  const { installStarterBoards } = await import('../src/discovery.mjs');
+  const s = openStore(':memory:');
+  try {
+    s.set('starterBoardsV2', true);
+    s.saveSource({ id: 'personal-loft', provider: 'lever', slug: 'loftorbital', enabled: false });
+    installStarterBoards(s);
+    assert.equal(s.sources().length, 6);
+    assert.equal(s.sources().find(source => source.id === 'personal-loft').enabled, false);
+    assert.ok(s.sources().some(source => source.provider === 'jobicy'));
+    s.deleteSource('starter-jobicy-us');
+    installStarterBoards(s);
+    assert.equal(s.sources().length, 5);
+  } finally {
+    s.close();
+  }
+});

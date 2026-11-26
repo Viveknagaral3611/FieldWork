@@ -42,7 +42,7 @@ This app still runs at localhost. For use over the internet it needs a hosted ba
 
 The app starts in **Live workspace** on a fresh install. If yours opens in Sample workspace, switch to Live workspace using the top bar.
 
-1. Click **Search now**. Five starter employer boards are installed automatically on new and existing workspaces. They require no credentials.
+1. Click **Search now**. Ten starter employer boards and Jobicy’s U.S.-eligible remote feed are installed automatically in new and existing workspaces. They require no credentials. Employer boards link to their own listings. Jobicy links open the original Jobicy listing. Its feed covers recent remote postings, and leaving the feed does not prove an opening closed.
 2. For broader U.S. discovery, request an application ID and key from [Adzuna](https://developer.adzuna.com/) and enter them once in **Sources & updates → Search across employers**. Select **Search now** again.
 3. Update your research areas and skills under **Your profile**. The discovery panel shows the generated keywords. Each run requests up to 35 recently indexed U.S. listings per query. The app sends predefined search terms, while your CV text and application notes stay local. API credentials are kept in the local database and excluded from JSON exports.
 
